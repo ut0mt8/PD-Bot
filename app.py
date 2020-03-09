@@ -7,12 +7,10 @@ import pypd
 import hashlib
 import hmac
 
-# TODO : handle multiple chan/services
-
 app = Chalice(app_name='PD-Bot')
 
+# TODO : handle multiple chan/services
 mail = "dev-data-engineering@contentsquare.com"
-callback_route = "/CCoqOVVpRW07T6WP"
 pagerduty_route = "/uECazblcbT9uGiyx"
 
 
@@ -23,8 +21,7 @@ def verify_slack_request(signature, timestamp, data):
     return hmac.compare_digest(bytes(request_hash), bytes(signature))
 
 
-# TODO : rewrite this route with non obfusced url and handle auth by slack
-@app.route(callback_route, methods = ['POST'], content_types=['application/x-www-form-urlencoded'])
+@app.route('/slack_callback', methods = ['POST'], content_types=['application/x-www-form-urlencoded'])
 def sc_callback():
     try:
         pypd.api_key = os.environ['PD_API_KEY']
@@ -44,22 +41,26 @@ def sc_callback():
         elif action == "resolve":
             incident.resolve(mail)
 
+        return Response("{'text':''}", status_code=200)
+
     except Exception as e:
         print e
-        pass
 
-    return Response("{'text':''}", status_code=200)
+    return Response("{'text':'Unauthorized'}", status_code=401)
 
 
-# TODO : rewrite this route with non obfusced url and handle auth by something
-@app.route(pagerduty_route, methods = ['POST'])
-def pd_callback():
+@app.route('/pd_callback/{servicekey}', methods = ['POST'])
+def pd_callback(servicekey):
     channel = "#alerts-dt"
     pd_url = "https://content-square.pagerduty.com/incidents/"
     graf_url = "https://grafana.eu-west-1.csq.io/d/e5Q3Ln1Wk/kafka-pipeline-overview?orgId=1&refresh=5m"
     doc_url = "https://contentsquare.atlassian.net/wiki/spaces/RD/pages/14975008/Data+Engineering"
 
     try:
+        key = os.environ['PD_SVC_KEY']
+        if key != servicekey:
+            return Response("{'text':'Unauthorized'}", status_code=401)
+
         j = app.current_request.json_body
         event = j['messages'][0]['event']
         iid =  j['messages'][0]['incident']['id']
@@ -83,7 +84,6 @@ def pd_callback():
               "fields": [
                 { "title": "", "value": "*Urgency:* "+urgency, "short": "true" },
                 { "title": "", "value": "*Assigned:* "+assignee, "short": "true" }
-                #{ "title": "", "value": "*Service:* "+service, "short": "true" }
               ],
               "mrkdwn_in": [
                 "fields"
@@ -137,7 +137,7 @@ def pd_callback():
 
     except Exception as e:
         print e
-        pass
+        return Response("{'text':'Unauthorized'}", status_code=401)
 
     return Response("", status_code=202, headers={'Content-Type': 'text/html'})
 
