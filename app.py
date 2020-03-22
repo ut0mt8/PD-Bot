@@ -10,9 +10,7 @@ import hmac
 app = Chalice(app_name='PD-Bot')
 
 # TODO : handle multiple chan/services
-mail = "dev-data-engineering@contentsquare.com"
-pagerduty_route = "/uECazblcbT9uGiyx"
-
+mail = os.environ['PD_MAIL']
 
 def verify_slack_request(signature, timestamp, data):
     signing_secret = os.environ['SC_SIGNING_KEY']
@@ -51,7 +49,7 @@ def sc_callback():
 
 @app.route('/pd_callback/{servicekey}', methods = ['POST'])
 def pd_callback(servicekey):
-    channel = "#alerts-dt"
+    channel = os.environ['SC_CHAN']
     pd_url = "https://content-square.pagerduty.com/incidents/"
     graf_url = "https://grafana.eu-west-1.csq.io/d/e5Q3Ln1Wk/kafka-pipeline-overview?orgId=1&refresh=5m"
     doc_url = "https://contentsquare.atlassian.net/wiki/spaces/RD/pages/14975008/Data+Engineering"
