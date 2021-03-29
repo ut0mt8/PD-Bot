@@ -16,7 +16,7 @@ jmespath==0.9.4
 kafka==1.3.5
 MarkupSafe==1.1.1
 pkg-resources==0.0.0
-Pygments==2.5.2
+Pygments==2.7.4
 pypd==1.1.0
 python-dateutil==2.8.0
 requests==2.23.0
